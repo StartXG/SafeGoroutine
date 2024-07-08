@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option go_package = "./;proto";
+
+package proto;
+
+message Action {
+  sint32 ActionNumber = 1;
+}
+
+message Balance {
+  sint32 BalanceNumber = 1;
+}
+
+service BankService {
+  rpc ModifyNumber(Action) returns (Balance);
+}
