@@ -15,10 +15,9 @@ import (
 var c proto.BankServiceClient
 var wg sync.WaitGroup
 
-func TakeAction(code int) {
-	//log.Println("协程", code, "触发")
-	//defer log.Println("协程", code, "结束")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+func TakeAction() {
+	// 为每个协程创建一个上下文，设置超时时间为10秒
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	for i := 0; i < 10; i++ {
 		AN := rand.Intn(2000) - 1000
@@ -40,9 +39,9 @@ func main() {
 	}
 	defer conn.Close()
 	c = proto.NewBankServiceClient(conn)
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 10000; i++ {
 		wg.Add(1)
-		go TakeAction(i)
+		go TakeAction()
 	}
 	wg.Wait()
 }
