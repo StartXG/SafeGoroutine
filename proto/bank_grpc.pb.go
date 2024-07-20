@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion8
 
 const (
 	BankService_ModifyNumber_FullMethodName = "/proto.BankService/ModifyNumber"
+	BankService_GetBalance_FullMethodName   = "/proto.BankService/GetBalance"
 )
 
 // BankServiceClient is the client API for BankService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BankServiceClient interface {
 	ModifyNumber(ctx context.Context, in *Action, opts ...grpc.CallOption) (*Balance, error)
+	GetBalance(ctx context.Context, in *Action, opts ...grpc.CallOption) (*Balance, error)
 }
 
 type bankServiceClient struct {
@@ -47,11 +49,22 @@ func (c *bankServiceClient) ModifyNumber(ctx context.Context, in *Action, opts .
 	return out, nil
 }
 
+func (c *bankServiceClient) GetBalance(ctx context.Context, in *Action, opts ...grpc.CallOption) (*Balance, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Balance)
+	err := c.cc.Invoke(ctx, BankService_GetBalance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BankServiceServer is the server API for BankService service.
 // All implementations must embed UnimplementedBankServiceServer
 // for forward compatibility
 type BankServiceServer interface {
 	ModifyNumber(context.Context, *Action) (*Balance, error)
+	GetBalance(context.Context, *Action) (*Balance, error)
 	mustEmbedUnimplementedBankServiceServer()
 }
 
@@ -61,6 +74,9 @@ type UnimplementedBankServiceServer struct {
 
 func (UnimplementedBankServiceServer) ModifyNumber(context.Context, *Action) (*Balance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ModifyNumber not implemented")
+}
+func (UnimplementedBankServiceServer) GetBalance(context.Context, *Action) (*Balance, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBalance not implemented")
 }
 func (UnimplementedBankServiceServer) mustEmbedUnimplementedBankServiceServer() {}
 
@@ -93,6 +109,24 @@ func _BankService_ModifyNumber_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BankService_GetBalance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Action)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BankServiceServer).GetBalance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BankService_GetBalance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BankServiceServer).GetBalance(ctx, req.(*Action))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BankService_ServiceDesc is the grpc.ServiceDesc for BankService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -103,6 +137,10 @@ var BankService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ModifyNumber",
 			Handler:    _BankService_ModifyNumber_Handler,
+		},
+		{
+			MethodName: "GetBalance",
+			Handler:    _BankService_GetBalance_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
