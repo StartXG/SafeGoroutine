@@ -14,4 +14,5 @@ message Balance {
 
 service BankService {
   rpc ModifyNumber(Action) returns (Balance);
+  rpc GetBalance(Action) returns (Balance);
 }

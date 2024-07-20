@@ -15,15 +15,26 @@ const PORT = ":8000"
 
 var (
 	balance int32 = 1000
-	lock    sync.Mutex
+	//lock    sync.Mutex
+	wg     sync.WaitGroup
+	rwLock sync.RWMutex
 )
 
 type server struct {
 	proto.UnimplementedBankServiceServer
 }
 
+func (s *server) GetBalance(ctx context.Context, req *proto.Balance) (b *proto.Balance, e error) {
+	defer wg.Done()
+	rwLock.RLock()
+	b = &proto.Balance{BalanceNumber: balance}
+	rwLock.RUnlock()
+	return
+}
+
 func (s *server) ModifyNumber(ctx context.Context, req *proto.Action) (b *proto.Balance, e error) {
-	lock.Lock()
+	defer wg.Done()
+	rwLock.Lock()
 	if balance+req.ActionNumber < 0 {
 		log.Println("执行交易：", req.ActionNumber, "，现有余额：", balance, "，余额不足，禁止执行")
 		e = fmt.Errorf("余额不足，无法执行操作")
@@ -33,7 +44,7 @@ func (s *server) ModifyNumber(ctx context.Context, req *proto.Action) (b *proto.
 		e = nil
 	}
 	b = &proto.Balance{BalanceNumber: balance}
-	defer lock.Unlock()
+	defer rwLock.Unlock()
 	return
 }
 
