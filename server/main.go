@@ -15,22 +15,22 @@ const PORT = ":8000"
 
 var (
 	balance int32 = 1000
-	//lock    sync.Mutex
-	wg     sync.WaitGroup
-	rwLock sync.RWMutex
+	wg      sync.WaitGroup
+	rwLock  sync.RWMutex
 )
 
 type server struct {
 	proto.UnimplementedBankServiceServer
 }
 
-func (s *server) GetBalance(ctx context.Context, req *proto.Balance) (b *proto.Balance, e error) {
-	defer wg.Done()
-	rwLock.RLock()
-	b = &proto.Balance{BalanceNumber: balance}
-	rwLock.RUnlock()
-	return
-}
+//func (s *server) GetBalance(ctx context.Context, req *proto.Empty) (b *proto.Balance, e error) {
+//	defer wg.Done()
+//	rwLock.RLock()
+//	b = &proto.Balance{BalanceNumber: balance}
+//	e = nil
+//	defer rwLock.RUnlock()
+//	return
+//}
 
 func (s *server) ModifyNumber(ctx context.Context, req *proto.Action) (b *proto.Balance, e error) {
 	defer wg.Done()

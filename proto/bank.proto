@@ -4,6 +4,8 @@ option go_package = "./;proto";
 
 package proto;
 
+//message Empty {}
+
 message Action {
   sint32 ActionNumber = 1;
 }
@@ -14,5 +16,5 @@ message Balance {
 
 service BankService {
   rpc ModifyNumber(Action) returns (Balance);
-  rpc GetBalance(Action) returns (Balance);
+//  rpc GetBalance(Empty) returns (Balance);
 }

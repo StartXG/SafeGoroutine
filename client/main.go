@@ -37,7 +37,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer conn.Close()
+	defer func(conn *grpc.ClientConn) {
+		err := conn.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(conn)
 	c = proto.NewBankServiceClient(conn)
 	for i := 0; i < 10000; i++ {
 		wg.Add(1)
