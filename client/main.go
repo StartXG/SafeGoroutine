@@ -31,6 +31,18 @@ func TakeAction() {
 	wg.Done()
 }
 
+func GetBalance() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	r, err := c.GetBalance(ctx, &proto.Empty{})
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	log.Println("当前余额:\t", r.BalanceNumber)
+	wg.Done()
+}
+
 func main() {
 	runtime.GOMAXPROCS(4)
 	conn, err := grpc.NewClient("localhost:8000", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -44,9 +56,16 @@ func main() {
 		}
 	}(conn)
 	c = proto.NewBankServiceClient(conn)
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 100; i++ {
 		wg.Add(1)
-		go TakeAction()
+		randomIntInRange := rand.Intn(100-1) + 1
+		if randomIntInRange%2 == 1 {
+			log.Println("GetBalance")
+			go GetBalance()
+		} else {
+			log.Println("TakeAction")
+			go TakeAction()
+		}
 	}
 	wg.Wait()
 }

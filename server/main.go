@@ -23,29 +23,28 @@ type server struct {
 	proto.UnimplementedBankServiceServer
 }
 
-//func (s *server) GetBalance(ctx context.Context, req *proto.Empty) (b *proto.Balance, e error) {
-//	defer wg.Done()
-//	rwLock.RLock()
-//	b = &proto.Balance{BalanceNumber: balance}
-//	e = nil
-//	defer rwLock.RUnlock()
-//	return
-//}
+func (s *server) GetBalance(ctx context.Context, req *proto.Empty) (b *proto.Balance, e error) {
+	// defer wg.Done()
+	rwLock.RLock()
+	b = &proto.Balance{BalanceNumber: balance}
+	e = nil
+	defer rwLock.RUnlock()
+	return
+}
 
 func (s *server) ModifyNumber(ctx context.Context, req *proto.Action) (b *proto.Balance, e error) {
-	defer wg.Done()
 	rwLock.Lock()
+	defer rwLock.Unlock()
+
 	if balance+req.ActionNumber < 0 {
 		log.Println("执行交易：", req.ActionNumber, "，现有余额：", balance, "，余额不足，禁止执行")
-		e = fmt.Errorf("余额不足，无法执行操作")
-	} else {
-		log.Println("执行交易：", req.ActionNumber, "，现有余额：", balance, "，允许执行")
-		balance += req.ActionNumber
-		e = nil
+		return nil, fmt.Errorf("余额不足，无法执行操作")
 	}
+
+	log.Println("执行交易：", req.ActionNumber, "，现有余额：", balance, "，允许执行")
+	balance += req.ActionNumber
 	b = &proto.Balance{BalanceNumber: balance}
-	defer rwLock.Unlock()
-	return
+	return b, nil
 }
 
 func main() {
