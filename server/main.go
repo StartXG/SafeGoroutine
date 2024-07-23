@@ -8,14 +8,13 @@ import (
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
-	"sync"
+	"sync/atomic"
 )
 
 const PORT = ":8000"
 
 var (
 	balance int32 = 1000
-	lock    sync.Mutex
 )
 
 type server struct {
@@ -23,17 +22,26 @@ type server struct {
 }
 
 func (s *server) ModifyNumber(ctx context.Context, req *proto.Action) (b *proto.Balance, e error) {
-	lock.Lock()
-	if balance+req.ActionNumber < 0 {
-		log.Println("执行交易：", req.ActionNumber, "，现有余额：", balance, "，余额不足，禁止执行")
+	// 先使用atomic.LoadInt32来获取当前的balance
+	currentBalance := atomic.LoadInt32(&balance)
+
+	// 计算新的余额
+	newBalance := currentBalance + req.ActionNumber
+
+	// 检查余额是否足够
+	if newBalance < 0 {
+		log.Println("执行交易：", req.ActionNumber, "，现有余额：", currentBalance, "，余额不足，禁止执行")
 		e = fmt.Errorf("余额不足，无法执行操作")
-	} else {
-		log.Println("执行交易：", req.ActionNumber, "，现有余额：", balance, "，允许执行")
-		balance += req.ActionNumber
-		e = nil
+		b = &proto.Balance{BalanceNumber: currentBalance}
+		return
 	}
-	b = &proto.Balance{BalanceNumber: balance}
-	defer lock.Unlock()
+
+	// 使用atomic.AddInt32来更新balance
+	atomic.AddInt32(&balance, req.ActionNumber)
+
+	log.Println("执行交易：", req.ActionNumber, "，现有余额：", newBalance, "，允许执行")
+	b = &proto.Balance{BalanceNumber: newBalance}
+	e = nil
 	return
 }
 
