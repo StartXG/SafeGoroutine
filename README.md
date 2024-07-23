@@ -22,9 +22,13 @@
 
 ## 2. 本地运行
 
+> 本地运行需要安装Protobuf，如果没有安装，请先安装。
+
 ```shell
 cd SafeGoroutine
 go mod tidy
+
+sh protoGen.sh
 
 # server
 go run server/main.go
