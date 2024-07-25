@@ -3,45 +3,67 @@ package main
 import (
 	"SafeGoroutine/proto"
 	"context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"math/rand"
-	"runtime"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var c proto.BankServiceClient
 var wg sync.WaitGroup
+var mu sync.Mutex
 
-func TakeAction() {
-	// 为每个协程创建一个上下文，设置超时时间为10秒
+const workerNumbers = 2
+
+func TakeAction(workerID int, job int) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	for i := 0; i < 10; i++ {
-		AN := rand.Intn(2000) - 1000
-		r, err := c.ModifyNumber(ctx, &proto.Action{ActionNumber: int32(AN)})
-		if err != nil {
-			log.Println(err.Error())
-			continue
-		}
-		log.Println("执行操作:\t", int32(AN), "\t---> 余额:\t", r.BalanceNumber)
+
+	AN := rand.Intn(2000) - 1000
+	r, err := c.ModifyNumber(ctx, &proto.Action{ActionNumber: int32(AN)})
+	if err != nil {
+		log.Println(err.Error())
+		return
 	}
-	wg.Done()
+	log.Println("workerID:", workerID, "job:", job, "执行操作:\t", int32(AN), "\t---> 余额:\t", r.BalanceNumber)
 }
 
 func main() {
-	runtime.GOMAXPROCS(4)
+	var executed int = 0
 	conn, err := grpc.NewClient("localhost:8000", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
 	c = proto.NewBankServiceClient(conn)
-	for i := 0; i < 10000; i++ {
+	jobs := make(chan int, 2)
+
+	for w := 1; w <= workerNumbers; w++ {
 		wg.Add(1)
-		go TakeAction()
+		go func(workerID int, jobs <-chan int) {
+			defer wg.Done()
+			for job := range jobs {
+				TakeAction(workerID, job)
+
+				mu.Lock()
+				executed += 1
+				mu.Unlock()
+			}
+		}(w, jobs)
 	}
+
+	log.Println("Sending jobs...")
+	for i := 0; i < 100; i++ {
+		jobs <- i
+	}
+
+	close(jobs)
+	log.Println("All jobs sent.")
+
 	wg.Wait()
+	log.Println("All workers done.", executed)
+
 }
